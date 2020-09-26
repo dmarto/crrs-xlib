@@ -1,9 +1,7 @@
-#define SDL_MAIN_HANDLED
-
-#include "main.h"
-#include <SDL.h>
-#include <future>
+#include <X11/Xlib.h>
 #include <math.h>
+
+#include <future>
 #include <string>
 #include <thread>
 #include <vector>
@@ -273,13 +271,12 @@ struct ScreenData
 	int x, y;
 	Sphere &light;
 	std::vector<Sphere *> &objList;
-	SDL_Renderer *renderer;
 };
 
 Vec3 RenderPixel(const ScreenData &sd)
 {
 	Vec3 pixclr = sd.color.black;
-	Vec3 pixclrBounce = sd.color.black;
+	//~ Vec3 pixclrBounce = sd.color.black;
 
 	const Ray ray(Vec3(sd.x, sd.y, -3), Vec3(0, 0, 1));
 	pixclr = Trace(ray, sd.light, sd.objList);
@@ -287,17 +284,34 @@ Vec3 RenderPixel(const ScreenData &sd)
 	return pixclr;
 }
 
+inline unsigned long _RGB(int r, int g, int b)
+{
+	return b + (g << 8) + (r << 16);
+}
+
 int main()
 {
 	const int W = 300;
 	const int H = 300;
 
-	SDL_Init(SDL_INIT_VIDEO);
+	//
+	Display *display = XOpenDisplay(NULL);
+	Window rWin = XDefaultRootWindow(display);
 
-	SDL_Window *win =
-		SDL_CreateWindow("Ray Tracer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, W, H, SDL_WINDOW_SHOWN);
+	Window win = XCreateSimpleWindow(display, rWin, 0, 0, W, H, 0, 0, 0);
 
-	SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+	XStoreName(display, win, "Ray Tracer");
+
+	unsigned long eventmask = PointerMotionMask | Button4Mask | Button5Mask;
+	XSelectInput(display, win, eventmask);
+
+	XMapWindow(display, win);
+
+	// TODO: render style
+	GC render = XCreateGC(display, win, 0, NULL);
+	XSync(display, False);
+
+	// WORLD
 
 	Colors color;
 
@@ -314,39 +328,37 @@ int main()
 	std::vector<Sphere *> objList = {&world, &sphere, &sphere1, &sphere2, &sphere3};
 
 	double theta = 0.0;
-	bool isRunning = true;
 
 	std::vector<Vec3> background;
 	for (int y = 0; y < H * 2; ++y)
 		for (int x = 0; x < W * 2; ++x)
 			background.emplace_back(Vec3(122, 11, 133) - (x + y) / 5);
 
-	while (isRunning)
+	// WORLD LOOP
+
+	XEvent event;
+	while (1)
 	{
-		SDL_Event event;
-		SDL_PollEvent(&event);
+		XCheckMaskEvent(display, eventmask, &event);
 
-		if (event.type == SDL_QUIT)
-			isRunning = false;
-
-		if (event.type == SDL_MOUSEMOTION)
+		if (event.type == MotionNotify)
 		{
-			light.center.x = event.motion.x;
-			light.center.y = event.motion.y;
+			light.center.x = event.xmotion.x;
+			light.center.y = event.xmotion.y;
 		}
 
 		for (int y = 0; y < H; ++y)
 			for (int x = 0; x < W; ++x)
 			{
-				ScreenData scrnData = {color, x, y, light, objList, renderer};
+				ScreenData scrnData = {color, x, y, light, objList};
 				Vec3 pixclr = RenderPixel(scrnData);
 
 				/*if (pixclr > color.white)
-					pixclr = pixclr - background[x + y];*/
+						pixclr = pixclr - background[x + y];*/
 				ColorBoundary(pixclr);
 
-				SDL_SetRenderDrawColor(renderer, (int)pixclr.x, (int)pixclr.y, (int)pixclr.z, 255);
-				SDL_RenderDrawPoint(renderer, x, y);
+				XSetForeground(display, render, _RGB((int)pixclr.x, (int)pixclr.y, (int)pixclr.z));
+				XDrawPoint(display, win, render, x, y);
 			}
 
 		int startIdx = 1;
@@ -358,14 +370,12 @@ int main()
 		objList[startIdx + 3]->center.y = objList[startIdx + 3]->center.y + 2 * -sin(theta);
 		// objList[startIdx + 3]->center.z = 50 + 10 * sin(theta);
 
-		SDL_RenderPresent(renderer);
-
 		theta += 0.1;
+
+		XFlush(display);
+		XSync(display, False);
 	}
 
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(win);
-	SDL_Quit();
-
+	XCloseDisplay(display);
 	return 0;
 };
