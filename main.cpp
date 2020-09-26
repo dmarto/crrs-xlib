@@ -1,10 +1,7 @@
 #include <X11/Xlib.h>
 #include <math.h>
-
-#include <future>
-#include <string>
-#include <thread>
 #include <vector>
+#include <string>
 
 struct Vec3
 {
@@ -209,14 +206,16 @@ void Reflection(const std::vector<Sphere *> &objects, const Vec3 &pointOfInterse
 	}
 }
 
-void Shadow(const std::vector<Sphere *> &objects, const Vec3 &pointOfIntersection, const Vec3 &normal, Vec3 &pixclr)
+void Shadow(const std::vector<Sphere *> &objects, const Vec3 &pointOfIntersection, const Vec3 &normal, Vec3 &pixclr,
+			const Sphere &light)
 {
 	Colors color;
-	double shadowIntensity = 0.5;
+
+	double shadowIntensity = 0.3;
 
 	for (auto &sphereB : objects)
 	{
-		const Ray ray2(pointOfIntersection, normal * 40);
+		const Ray ray2(pointOfIntersection, light.GetNormal(sphereB->center) * -30);
 		double t2;
 		if (sphereB->Intersects(ray2, t2) && sphereB->name != "world")
 		{
@@ -226,7 +225,7 @@ void Shadow(const std::vector<Sphere *> &objects, const Vec3 &pointOfIntersectio
 			const double dotP2 = dot(len2.Normalize(), normal2.Normalize());
 
 			double shadow = t2 * shadowIntensity;
-			Vec3 pixclrBounce = color.white * dotP2 / shadow;
+			Vec3 pixclrBounce = light.clr * dotP2 / shadow;
 			ColorBoundary(pixclrBounce);
 
 			pixclr = pixclr - pixclrBounce;
@@ -242,7 +241,7 @@ Vec3 Trace(const Ray &ray, const Sphere &light, const std::vector<Sphere *> &obj
 	for (auto &sphere : objects)
 	{
 		double t;
-		double lightIntensity = 0.4;
+		double lightIntensity = 1.2;
 
 		if (sphere->Intersects(ray, t))
 		{
@@ -254,7 +253,7 @@ Vec3 Trace(const Ray &ray, const Sphere &light, const std::vector<Sphere *> &obj
 			pixclr = (sphere->clr + light.clr / 2 * dotProduct) * lightIntensity;
 
 			if (sphere->name == "world")
-				Shadow(objects, pointOfIntersection, normal, pixclr);
+				Shadow(objects, pointOfIntersection, normal, pixclr, light);
 			else
 				Reflection(objects, pointOfIntersection, normal, pixclr);
 
@@ -284,6 +283,31 @@ Vec3 RenderPixel(const ScreenData &sd)
 	return pixclr;
 }
 
+void HandleEvents(XEvent &event, Sphere &light, Sphere &world, int &curLightColorId, std::vector<Vec3> &lightColors)
+{
+	if (event.type == MotionNotify)
+	{
+		light.center.x = event.xmotion.x;
+		light.center.y = event.xmotion.y;
+	}
+
+	if (event.type == ButtonPress && event.xbutton.button == 4 && world.center.z > 580)
+	{
+		world.center.z -= 5;
+		world.center.y -= 5;
+
+		light.center.z -= 30;
+	}
+
+	if (event.type == ButtonPress && event.xbutton.button == 5 && world.center.z < 600)
+	{
+		world.center.z += 5;
+		world.center.y += 5;
+
+		light.center.z += 30;
+	}
+}
+
 inline unsigned long _RGB(int r, int g, int b)
 {
 	return b + (g << 8) + (r << 16);
@@ -302,7 +326,7 @@ int main()
 
 	XStoreName(display, win, "Ray Tracer");
 
-	unsigned long eventmask = PointerMotionMask | Button4Mask | Button5Mask;
+	unsigned long eventmask = PointerMotionMask | ButtonPressMask;
 	XSelectInput(display, win, eventmask);
 
 	XMapWindow(display, win);
@@ -317,13 +341,16 @@ int main()
 
 	Sphere sphere(Vec3(W * 0.5, H * 0.5, 40), 30, color.white);
 	Sphere sphere1(Vec3(W * 0.3, H * 0.5, 20), 15, color.red);
-	Sphere sphere2(Vec3(W * 0.25, H * 0.25, 30), 20, color.green);
+	Sphere sphere2(Vec3(W * 0.25, H * 0.35, 30), 20, color.green);
 	Sphere sphere3(Vec3(W * 0.85, H * 0.65, 40), 35, color.blue);
 
 	Vec3 worldColor = Vec3(94, 0, 182);
-	Sphere world(Vec3(W * 0.5, H * 4.5, 1350), 1700, worldColor, "world");
+	Sphere world(Vec3(W * 0.5, H * 3.8, 650), 1100, worldColor, "world");
 
-	Sphere light(Vec3(W * 0.1, H * 0.5, 0), 20, color.white);
+	Sphere light(Vec3(W * 0.1, H * 0.5, 0), 40, color.white);
+
+	std::vector<Vec3> lightColors = {color.white, color.blue, color.red, color.green, color.yellow};
+	int curLightColorId = 0;
 
 	std::vector<Sphere *> objList = {&world, &sphere, &sphere1, &sphere2, &sphere3};
 
@@ -339,22 +366,16 @@ int main()
 	XEvent event;
 	while (1)
 	{
-		XCheckMaskEvent(display, eventmask, &event);
+		if (!XCheckMaskEvent(display, eventmask, &event))
+			event.type = 0;
 
-		if (event.type == MotionNotify)
-		{
-			light.center.x = event.xmotion.x;
-			light.center.y = event.xmotion.y;
-		}
+		HandleEvents(event, light, world, curLightColorId, lightColors);
 
 		for (int y = 0; y < H; ++y)
 			for (int x = 0; x < W; ++x)
 			{
 				ScreenData scrnData = {color, x, y, light, objList};
 				Vec3 pixclr = RenderPixel(scrnData);
-
-				/*if (pixclr > color.white)
-						pixclr = pixclr - background[x + y];*/
 				ColorBoundary(pixclr);
 
 				XSetForeground(display, render, _RGB((int)pixclr.x, (int)pixclr.y, (int)pixclr.z));
@@ -364,9 +385,9 @@ int main()
 		int startIdx = 1;
 		objList[startIdx]->center.x = (W >> 1) + (W / 6) * sin(theta);
 		objList[startIdx]->center.y = H / 2.8 + (H / 6) * cos(theta / 2);
-		objList[startIdx + 1]->center.x = 30 + 10 * sin(theta);
-		objList[startIdx + 1]->center.y = 80 + 10 * cos(theta);
-		objList[startIdx + 2]->center.y = 20 + 10 * sin(theta);
+		objList[startIdx + 1]->center.x = objList[startIdx + 1]->center.x + 2 * sin(theta);
+		objList[startIdx + 1]->center.y = objList[startIdx + 1]->center.y + 2 * cos(theta);
+		objList[startIdx + 2]->center.y = objList[startIdx + 2]->center.y + 2 * sin(theta);
 		objList[startIdx + 3]->center.y = objList[startIdx + 3]->center.y + 2 * -sin(theta);
 		// objList[startIdx + 3]->center.z = 50 + 10 * sin(theta);
 
@@ -378,4 +399,4 @@ int main()
 
 	XCloseDisplay(display);
 	return 0;
-};
+}
