@@ -1,7 +1,7 @@
 #include <X11/Xlib.h>
 #include <math.h>
-#include <string>
 #include <vector>
+#include <string>
 
 struct Vec3
 {
