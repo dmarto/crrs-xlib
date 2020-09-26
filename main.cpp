@@ -1,23 +1,24 @@
 #define SDL_MAIN_HANDLED
 
-#include <math.h>
-#include <vector>
-#include <SDL.h>
-#include <thread>
-#include <future>
-#include <string>
 #include "main.h"
+#include <SDL.h>
+#include <future>
+#include <math.h>
+#include <string>
+#include <thread>
+#include <vector>
 
 struct Vec3
 {
 	double x, y, z;
 
-	Vec3() {};
+	Vec3(){};
 
-	Vec3(double x, double y, double z) :
-		x(x), y(y), z(z) {}
+	Vec3(double x, double y, double z) : x(x), y(y), z(z)
+	{
+	}
 
-	Vec3 operator+(const Vec3& v) const
+	Vec3 operator+(const Vec3 &v) const
 	{
 		return Vec3(x + v.x, y + v.y, z + v.z);
 	}
@@ -27,7 +28,7 @@ struct Vec3
 		return Vec3(x + num, y + num, z + num);
 	}
 
-	Vec3 operator-(const Vec3& v) const
+	Vec3 operator-(const Vec3 &v) const
 	{
 		return Vec3(x - v.x, y - v.y, z - v.z);
 	}
@@ -52,12 +53,12 @@ struct Vec3
 		return Vec3(x / div, y / div, z / div);
 	}
 
-	Vec3 operator/(const Vec3& div) const
+	Vec3 operator/(const Vec3 &div) const
 	{
 		return Vec3(x / div.x, y / div.y, z / div.z);
 	}
 
-	bool operator==(const Vec3& v1)
+	bool operator==(const Vec3 &v1)
 	{
 		if (v1.x == x && v1.y == y && v1.z == z)
 			return true;
@@ -65,7 +66,7 @@ struct Vec3
 		return false;
 	}
 
-	bool operator!=(const Vec3& v1)
+	bool operator!=(const Vec3 &v1)
 	{
 		if (v1.x != x && v1.y != y && v1.z != z)
 			return true;
@@ -73,7 +74,7 @@ struct Vec3
 		return false;
 	}
 
-	bool operator>(const Vec3& v1)
+	bool operator>(const Vec3 &v1)
 	{
 		if (v1.x > x && v1.y > y && v1.z > z)
 			return true;
@@ -81,7 +82,7 @@ struct Vec3
 		return false;
 	}
 
-	bool operator<(const Vec3& v1)
+	bool operator<(const Vec3 &v1)
 	{
 		if (v1.x < x && v1.y < y && v1.z < z)
 			return true;
@@ -96,7 +97,7 @@ struct Vec3
 	}
 };
 
-inline double dot(const Vec3& vec1, const Vec3& vec2)
+inline double dot(const Vec3 &vec1, const Vec3 &vec2)
 {
 	return (vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z);
 }
@@ -104,8 +105,9 @@ inline double dot(const Vec3& vec1, const Vec3& vec2)
 struct Ray
 {
 	Vec3 origin, destination;
-	Ray(const Vec3& org, const Vec3& dest) :
-		origin(org), destination(dest) {}
+	Ray(const Vec3 &org, const Vec3 &dest) : origin(org), destination(dest)
+	{
+	}
 };
 
 struct Sphere
@@ -115,18 +117,20 @@ struct Sphere
 	Vec3 clr;
 	std::string name;
 
-	Sphere(const Vec3& ctr, double rad, Vec3& clr) :
-		center(ctr), radius(rad), clr(clr) {}
+	Sphere(const Vec3 &ctr, double rad, Vec3 &clr) : center(ctr), radius(rad), clr(clr)
+	{
+	}
 
-	Sphere(const Vec3& ctr, double rad, Vec3& clr, std::string name) :
-		center(ctr), radius(rad), clr(clr), name(name) {}
+	Sphere(const Vec3 &ctr, double rad, Vec3 &clr, std::string name) : center(ctr), radius(rad), clr(clr), name(name)
+	{
+	}
 
-	Vec3 GetNormal(const Vec3& pi) const
+	Vec3 GetNormal(const Vec3 &pi) const
 	{
 		return (pi - center) / radius;
 	}
 
-	bool Intersects(const Ray& ray, double& t) const
+	bool Intersects(const Ray &ray, double &t) const
 	{
 		const Vec3 origin = ray.origin;
 		const Vec3 dest = ray.destination;
@@ -147,7 +151,7 @@ struct Sphere
 		return true;
 	}
 
-	bool operator!=(const Sphere& s) const
+	bool operator!=(const Sphere &s) const
 	{
 		if (s.center.x == center.x && s.center.y == center.y && s.center.z == center.z)
 			return false;
@@ -155,7 +159,7 @@ struct Sphere
 		return true;
 	}
 
-	bool operator==(const Sphere& s) const
+	bool operator==(const Sphere &s) const
 	{
 		if (s.center.x == center.x && s.center.y == center.y && s.center.z == center.z)
 			return true;
@@ -166,31 +170,27 @@ struct Sphere
 
 struct Colors
 {
-	Vec3 white = { 255, 255, 255 };
-	Vec3 yellow = { 255, 255, 0 };
-	Vec3 black = { 0, 0, 0 };
-	Vec3 red = { 255, 0, 110 };
-	Vec3 green = { 110, 255,0 };
-	Vec3 blue = { 0, 110, 255 };
+	Vec3 white = {255, 255, 255};
+	Vec3 yellow = {255, 255, 0};
+	Vec3 black = {0, 0, 0};
+	Vec3 red = {255, 0, 110};
+	Vec3 green = {110, 255, 0};
+	Vec3 blue = {0, 110, 255};
 };
 
-void ColorBoundary(Vec3& clr)
+void ColorBoundary(Vec3 &clr)
 {
 	clr.x = (clr.x > 255) ? 255 : (clr.x < 0) ? 0 : clr.x;
 	clr.y = (clr.y > 255) ? 255 : (clr.y < 0) ? 0 : clr.y;
 	clr.z = (clr.z > 255) ? 255 : (clr.z < 0) ? 0 : clr.z;
 }
 
-void Reflection(
-	const std::vector<Sphere*>& objects,
-	const Vec3& pointOfIntersection,
-	const Vec3& normal,
-	Vec3& pixclr)
+void Reflection(const std::vector<Sphere *> &objects, const Vec3 &pointOfIntersection, const Vec3 &normal, Vec3 &pixclr)
 {
 	Colors color;
 	double reflectionIntensity = 2.5;
 
-	for (auto& sphereB : objects)
+	for (auto &sphereB : objects)
 	{
 		const Ray ray2(pointOfIntersection, normal * 40);
 		double t2;
@@ -201,10 +201,9 @@ void Reflection(
 			const Vec3 normal2 = sphereB->GetNormal(pointOfIntersection2);
 			const double dotP2 = dot(len2.Normalize(), normal2.Normalize());
 
-
 			Vec3 pixclrBounce = sphereB->clr * dotP2 * reflectionIntensity;
 			if (sphereB->name == "world")
-				pixclrBounce = pixclrBounce - color.white/1.5;
+				pixclrBounce = pixclrBounce - color.white / 1.5;
 
 			ColorBoundary(pixclrBounce);
 			pixclr = pixclrBounce + pixclr;
@@ -212,16 +211,12 @@ void Reflection(
 	}
 }
 
-void Shadow(
-	const std::vector<Sphere*>& objects,
-	const Vec3& pointOfIntersection,
-	const Vec3& normal,
-	Vec3& pixclr)
+void Shadow(const std::vector<Sphere *> &objects, const Vec3 &pointOfIntersection, const Vec3 &normal, Vec3 &pixclr)
 {
 	Colors color;
 	double shadowIntensity = 0.5;
 
-	for (auto& sphereB : objects)
+	for (auto &sphereB : objects)
 	{
 		const Ray ray2(pointOfIntersection, normal * 40);
 		double t2;
@@ -241,12 +236,12 @@ void Shadow(
 	}
 }
 
-Vec3 Trace(const Ray& ray, const Sphere& light, const std::vector<Sphere*>& objects)
+Vec3 Trace(const Ray &ray, const Sphere &light, const std::vector<Sphere *> &objects)
 {
 	Colors color;
 	Vec3 pixclr = color.black;
 
-	for (auto& sphere : objects)
+	for (auto &sphere : objects)
 	{
 		double t;
 		double lightIntensity = 0.4;
@@ -258,8 +253,7 @@ Vec3 Trace(const Ray& ray, const Sphere& light, const std::vector<Sphere*>& obje
 			const Vec3 normal = sphere->GetNormal(pointOfIntersection);
 			const double dotProduct = dot(len.Normalize(), normal.Normalize());
 
-			pixclr = (sphere->clr + light.clr/2 * dotProduct) * lightIntensity;
-
+			pixclr = (sphere->clr + light.clr / 2 * dotProduct) * lightIntensity;
 
 			if (sphere->name == "world")
 				Shadow(objects, pointOfIntersection, normal, pixclr);
@@ -275,14 +269,14 @@ Vec3 Trace(const Ray& ray, const Sphere& light, const std::vector<Sphere*>& obje
 
 struct ScreenData
 {
-	Colors& color;
+	Colors &color;
 	int x, y;
-	Sphere& light;
-	std::vector<Sphere*>& objList;
-	SDL_Renderer* renderer;
+	Sphere &light;
+	std::vector<Sphere *> &objList;
+	SDL_Renderer *renderer;
 };
 
-Vec3 RenderPixel(const ScreenData& sd)
+Vec3 RenderPixel(const ScreenData &sd)
 {
 	Vec3 pixclr = sd.color.black;
 	Vec3 pixclrBounce = sd.color.black;
@@ -300,14 +294,10 @@ int main()
 
 	SDL_Init(SDL_INIT_VIDEO);
 
-	SDL_Window* win =
-		SDL_CreateWindow(
-		"Ray Tracer",
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		W, H, SDL_WINDOW_SHOWN);
+	SDL_Window *win =
+		SDL_CreateWindow("Ray Tracer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, W, H, SDL_WINDOW_SHOWN);
 
-	SDL_Renderer* renderer =
-		SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+	SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
 
 	Colors color;
 
@@ -316,19 +306,19 @@ int main()
 	Sphere sphere2(Vec3(W * 0.25, H * 0.25, 30), 20, color.green);
 	Sphere sphere3(Vec3(W * 0.85, H * 0.65, 40), 35, color.blue);
 
-	Vec3 worldColor = Vec3(94,0,182);
+	Vec3 worldColor = Vec3(94, 0, 182);
 	Sphere world(Vec3(W * 0.5, H * 4.5, 1350), 1700, worldColor, "world");
 
 	Sphere light(Vec3(W * 0.1, H * 0.5, 0), 20, color.white);
 
-	std::vector<Sphere*> objList = { &world , &sphere, &sphere1, &sphere2, &sphere3 };
+	std::vector<Sphere *> objList = {&world, &sphere, &sphere1, &sphere2, &sphere3};
 
 	double theta = 0.0;
 	bool isRunning = true;
 
 	std::vector<Vec3> background;
-	for (int y = 0; y < H*2; ++y)
-		for (int x = 0; x < W*2; ++x)
+	for (int y = 0; y < H * 2; ++y)
+		for (int x = 0; x < W * 2; ++x)
 			background.emplace_back(Vec3(122, 11, 133) - (x + y) / 5);
 
 	while (isRunning)
@@ -348,7 +338,7 @@ int main()
 		for (int y = 0; y < H; ++y)
 			for (int x = 0; x < W; ++x)
 			{
-				ScreenData scrnData = { color, x, y, light, objList, renderer };
+				ScreenData scrnData = {color, x, y, light, objList, renderer};
 				Vec3 pixclr = RenderPixel(scrnData);
 
 				/*if (pixclr > color.white)
@@ -360,13 +350,13 @@ int main()
 			}
 
 		int startIdx = 1;
-		objList[startIdx]->center.x = (W >> 1) + (W/6) * sin(theta);
-		objList[startIdx]->center.y = H/2.8 + (H/6) * cos(theta/2);
-		objList[startIdx+1]->center.x = 30 + 10 * sin(theta);
-		objList[startIdx+1]->center.y = 80 + 10 * cos(theta);
-		objList[startIdx+2]->center.y = 20 + 10 * sin(theta);
+		objList[startIdx]->center.x = (W >> 1) + (W / 6) * sin(theta);
+		objList[startIdx]->center.y = H / 2.8 + (H / 6) * cos(theta / 2);
+		objList[startIdx + 1]->center.x = 30 + 10 * sin(theta);
+		objList[startIdx + 1]->center.y = 80 + 10 * cos(theta);
+		objList[startIdx + 2]->center.y = 20 + 10 * sin(theta);
 		objList[startIdx + 3]->center.y = objList[startIdx + 3]->center.y + 2 * -sin(theta);
-		//objList[startIdx + 3]->center.z = 50 + 10 * sin(theta);
+		// objList[startIdx + 3]->center.z = 50 + 10 * sin(theta);
 
 		SDL_RenderPresent(renderer);
 
