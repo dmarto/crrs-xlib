@@ -1,0 +1,4 @@
+This is a fork of my friends cpu realtime raytracer[0], but SDL is
+replaced with Xlib - just because.
+
+[0] https://github.com/jeuxdemains/cpu_realtime_raytracer_from_scratch
