@@ -56,32 +56,40 @@ struct Vec3
 	bool operator==(const Vec3 &v1)
 	{
 		if (v1.x == x && v1.y == y && v1.z == z)
+		{
 			return true;
-
+		}
+			
 		return false;
 	}
 
 	bool operator!=(const Vec3 &v1)
 	{
 		if (v1.x != x && v1.y != y && v1.z != z)
+		{
 			return true;
-
+		}
+			
 		return false;
 	}
 
 	bool operator>(const Vec3 &v1)
 	{
 		if (v1.x > x && v1.y > y && v1.z > z)
+		{
 			return true;
-
+		}
+			
 		return false;
 	}
 
 	bool operator<(const Vec3 &v1)
 	{
 		if (v1.x < x && v1.y < y && v1.z < z)
+		{
 			return true;
-
+		}
+			
 		return false;
 	}
 
@@ -135,8 +143,10 @@ struct Sphere
 		double discrim = b * b - 4 * center;
 
 		if (discrim < 1e-4)
+		{
 			return false;
-
+		}
+			
 		discrim = sqrt(discrim);
 		const double t0 = -b - discrim;
 		const double t1 = -b + discrim;
@@ -149,16 +159,20 @@ struct Sphere
 	bool operator!=(const Sphere &s) const
 	{
 		if (s.center.x == center.x && s.center.y == center.y && s.center.z == center.z)
+		{
 			return false;
-
+		}
+			
 		return true;
 	}
 
 	bool operator==(const Sphere &s) const
 	{
 		if (s.center.x == center.x && s.center.y == center.y && s.center.z == center.z)
+		{
 			return true;
-
+		}
+			
 		return false;
 	}
 };
@@ -198,8 +212,10 @@ void Reflection(const std::vector<Sphere *> &objects, const Vec3 &pointOfInterse
 
 			Vec3 pixclrBounce = sphereB->clr * dotP2 * reflectionIntensity;
 			if (sphereB->name == "world")
+			{
 				pixclrBounce = pixclrBounce - color.white / 1.5;
-
+			}
+				
 			ColorBoundary(pixclrBounce);
 			pixclr = pixclrBounce + pixclr;
 		}
@@ -253,7 +269,10 @@ Vec3 Trace(const Ray &ray, const Sphere &light, const std::vector<Sphere *> &obj
 			pixclr = (sphere->clr + light.clr / 2 * dotProduct) * lightIntensity;
 
 			if (sphere->name != "world")
+			{
 				Reflection(objects, pointOfIntersection, normal, pixclr);
+			}
+			
 			Shadow(objects, pointOfIntersection, normal, pixclr, light);
 
 			ColorBoundary(pixclr);
@@ -354,20 +373,27 @@ int main()
 
 	std::vector<Vec3> background;
 	for (int y = 0; y < H * 2; ++y)
+	{
 		for (int x = 0; x < W * 2; ++x)
+		{
 			background.emplace_back(Vec3(122, 11, 133) - (x + y) / 5);
-
+		}
+	}
+		
 	// WORLD LOOP
 
 	XEvent event;
 	while (1)
 	{
 		if (!XCheckMaskEvent(display, eventmask, &event))
+		{
 			event.type = 0;
-
+		}
+			
 		HandleEvents(event, light, world);
 
 		for (int y = 0; y < H; ++y)
+		{
 			for (int x = 0; x < W; ++x)
 			{
 				ScreenData scrnData = {color, x, y, light, objList};
@@ -377,7 +403,8 @@ int main()
 				XSetForeground(display, render, _RGB((int)pixclr.x, (int)pixclr.y, (int)pixclr.z));
 				XDrawPoint(display, win, render, x, y);
 			}
-
+		}
+			
 		int startIdx = 1;
 		objList[startIdx]->center.x = (W >> 1) + (W / 6) * sin(theta);
 		objList[startIdx]->center.y = H / 2.8 + (H / 6) * cos(theta / 2);
